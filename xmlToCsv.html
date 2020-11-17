@@ -10,14 +10,19 @@
             body {
                 font-size: large;
             }
-            
-            </style>
+
+            .success {
+                color: blue;
+            }
+
+            .error {
+                color: red;
+            }
+        </style>
         <title>Xml to Csv Convertor</title>
         <div class="title">
             Xml to Csv
         </div>
-
-
     </head>
 
     <body>
@@ -30,9 +35,26 @@
             <input type="text" id="tagNameInput" value="" onkeyup="checkNodeInput(this)" />
             <input type="submit" id="convertBtn" value="convert" disabled="true" onclick="saveTabDataToCsv()" />
         </div>
+        <div style="visibility: hidden;" id="messageDiv" class="">
+
+        </div>
         <script>
 
             var tableData;
+
+            function notifyAndThrow(e) {
+                notify(`conversion failed. please check logs: ${e.message}`, false);
+                console.log(e.stack);
+                throw e;
+            }
+
+            function notify(message, success = true) {
+                var messageDiv = document.getElementById('messageDiv');
+                messageDiv.style.visibility="visible";
+                messageDiv.innerText = message;
+                var outComeClass = success ? "success" : "error";
+                messageDiv.classList.add(outComeClass);
+            }
 
             function nodeToRow(node, fieldNames = {}, rowData = {}, path = "") {
                 var elemRep = {};
@@ -111,9 +133,14 @@
 
             function openFile(event) {
                 loadTextFile(event.target.files[0], xmlStr => {
-                    xmlDoc = xmlStrToDoc(xmlStr)
-                    var step2Div = document.getElementById('step2');
-                    step2Div.style.visibility = "visible";
+                    try {
+                        document.getElementById('messageDiv').style.visibility="hidden";
+                        xmlDoc = xmlStrToDoc(xmlStr)
+                        var step2Div = document.getElementById('step2');
+                        step2Div.style.visibility = "visible";
+                    } catch (e) {
+                        notifyAndThrow(e);
+                    }
                 })
             }
 
@@ -147,15 +174,22 @@
                 document.body.removeChild(element);
             }
 
+            
+
             function saveTabDataToCsv() {
-                var tagNameInput = document.getElementById('tagNameInput');
-                var tagName = tagNameInput.value;
-                tableData = convertToCsv(xmlDoc, tagName);
-                var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
-                console.log(fieldNamesStr);
-                var csv = fieldNamesStr;
-                tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
-                download("row_data.csv", csv)
+                try {
+                    var tagNameInput = document.getElementById('tagNameInput');
+                    var tagName = tagNameInput.value;
+                    tableData = convertToCsv(xmlDoc, tagName);
+                    var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
+                    console.log(fieldNamesStr);
+                    var csv = fieldNamesStr;
+                    tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
+                    download("row_data.csv", csv)
+                    notify("conversion complete!");
+                } catch (e) {
+                    notifyAndThrow(e);
+                }
             }
 
 
