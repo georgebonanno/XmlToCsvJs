@@ -1,39 +1,54 @@
 <xhtml>
 
     <head>
-        Xml to Csv 
+        <style>
+            .title {
+                font-size: larger;
+                font-weight: bold;
+            }
+
+            body {
+                font-size: large;
+            }
+            
+            </style>
+        <title>Xml to Csv Convertor</title>
+        <div class="title">
+            Xml to Csv
+        </div>
+
+
+    </head>
+
+    <body>
         <div>
             step 1. Choose Xml file to convert to csv:
             <input type='file' accept='*.xml' onchange='openFile(event)'><br>
         </div>
         <div style="visibility: hidden;" id="step2">
             step 2. insert the nodes which should be converted to csv:
-            <input type="text" id="tagNameInput" value="" onkeyup="checkNodeInput(this)"/>
-            <input type="submit" id="convertBtn" value="convert" disabled="true" onclick="saveTabDataToCsv()"/>
+            <input type="text" id="tagNameInput" value="" onkeyup="checkNodeInput(this)" />
+            <input type="submit" id="convertBtn" value="convert" disabled="true" onclick="saveTabDataToCsv()" />
         </div>
-        
-    </head>
-
-    <body>
         <script>
 
             var tableData;
 
             function nodeToRow(node, fieldNames = {}, rowData = {}, path = "") {
-                var elemRep={};
+                var elemRep = {};
                 for (var i = 0; i < node.children.length; i++) {
                     var child = node.children[i];
                     var postFix;
                     if (!elemRep[child.tagName]) {
-                        elemRep[child.tagName]=1
+                        elemRep[child.tagName] = 1
                         postFix = ""
                     } else {
                         elemRep[child.tagName]++;
-                        postFix = "_"+elemRep[child.tagName];
+                        postFix = "_" + elemRep[child.tagName];
                     }
                     var isLeaf = child.children.length == 0;
                     var prefix = path.length > 0 ? path + "/" : "";
-                    var fieldName=prefix+child.tagName+postFix;
+                    var fieldName = prefix + child.tagName + postFix;
                     if (isLeaf) {
                         rowData[fieldName] = child.innerHTML;
                         fieldNames[fieldName] = 1;
@@ -44,20 +59,20 @@
                 return rowData;
             }
 
-            function evalXpath(xmlDoc,xpathExpression) {
+            function evalXpath(xmlDoc, xpathExpression) {
                 console.log(`evaluating xpath expression ${xpathExpression}`)
                 var nsResolver = xmlDoc.createNSResolver(xmlDoc.ownerDocument == null ? xmlDoc.documentElement : xmlDoc.ownerDocument.documentElement);
                 var res = xmlDoc.evaluate(xpathExpression, xmlDoc, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null)
                 return res;
             }
 
-            function extractAllTagNames(xmlDoc,path="",tagNames={}) {
-                for (var i=0; i<xmlDoc.children.length; i++) {
+            function extractAllTagNames(xmlDoc, path = "", tagNames = {}) {
+                for (var i = 0; i < xmlDoc.children.length; i++) {
                     var currentChild = xmlDoc.children[i];
-                    var fullPath=path+"/"+currentChild.tagName;
-                    tagNames[fullPath]=1;
-                    for (var ii=0; ii<currentChild.children.length; ii++) {
-                        extractAllTagNames(currentChild,fullPath,tagNames)
+                    var fullPath = path + "/" + currentChild.tagName;
+                    tagNames[fullPath] = 1;
+                    for (var ii = 0; ii < currentChild.children.length; ii++) {
+                        extractAllTagNames(currentChild, fullPath, tagNames)
                     }
                 }
                 return tagNames;
@@ -73,11 +88,11 @@
                 console.log("xml: ${xmlDoc} ", xmlDoc);
                 var xpathExpression;
                 if (!tagName.startsWith("/")) {
-                    xpathExpression="//"+tagName;
+                    xpathExpression = "//" + tagName;
                 } else {
-                    xpathExpression=tagName;
+                    xpathExpression = tagName;
                 }
-                var res=evalXpath(xmlDoc,xpathExpression)
+                var res = evalXpath(xmlDoc, xpathExpression)
                 var nextNode;
                 var tabData = [];
                 console.log(`iterating transaction: ${res}`)
@@ -97,8 +112,8 @@
             function openFile(event) {
                 loadTextFile(event.target.files[0], xmlStr => {
                     xmlDoc = xmlStrToDoc(xmlStr)
-                    var step2Div=document.getElementById('step2');
-                    step2Div.style.visibility="visible";
+                    var step2Div = document.getElementById('step2');
+                    step2Div.style.visibility = "visible";
                 })
             }
 
@@ -131,18 +146,18 @@
 
                 document.body.removeChild(element);
             }
-            
+
             function saveTabDataToCsv() {
-                var tagNameInput=document.getElementById('tagNameInput');
-                var tagName=tagNameInput.value;
+                var tagNameInput = document.getElementById('tagNameInput');
+                var tagName = tagNameInput.value;
                 tableData = convertToCsv(xmlDoc, tagName);
                 var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
                 console.log(fieldNamesStr);
                 var csv = fieldNamesStr;
-                tableData.tabData.forEach(row => csv+="\n"+rowToCommaSepString(tableData.fieldNames, row));
-                download("row_data.csv",csv)
+                tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
+                download("row_data.csv", csv)
             }
-            
+
 
             function loadTextFile(path, onFileRead) {
 
@@ -166,7 +181,7 @@
             function checkNodeInput(inputElem) {
                 if (inputElem.value.length > 0) {
                     var convertBtn = document.getElementById('convertBtn');
-                    convertBtn.disabled=false;
+                    convertBtn.disabled = false;
                 }
             }
 
