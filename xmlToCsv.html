@@ -1,130 +1,25 @@
 <xhtml>
 
     <head>
-        Xml to Csv 2
-        <input type='file' accept='text/plain' onchange='openFile(event)'><br>
+        Xml to Csv 
+        <div>
+            step 1. Choose Xml file to convert to csv:
+            <input type='file' accept='*.xml' onchange='openFile(event)'><br>
+        </div>
+        <div style="visibility: hidden;" id="step2">
+            step 2. insert the nodes which should be converted to csv:
+            <input type="text" id="tagNameInput" value="" onkeyup="checkNodeInput(this)"/>
+            <input type="submit" id="convertBtn" value="convert" disabled="true" onclick="saveTabDataToCsv()"/>
+        </div>
+        
     </head>
 
     <body>
         <script>
 
-            var sampleXml = `<report>
-    <rentity_id>3</rentity_id>
-    <rentity_branch>malta</rentity_branch>
-    <submission_code>E</submission_code>
-    <report_code>STR</report_code>
-    <entity_reference>3</entity_reference>
-    <fiu_ref_number>1</fiu_ref_number>
-    <submission_date>2020-01-22T00:00:00</submission_date>
-    <currency_code_local>EUR</currency_code_local>
-    <reporting_person>
-        <gender>M</gender>
-        <title>Dr.</title>
-        <first_name>Maher</first_name>
-        <last_name>Abu Ghali</last_name>
-        <birthdate>1973-03-21T00:00:00</birthdate>
-        <ssn>797979</ssn>
-        <id_number>24234</id_number>
-        <nationality1>AT</nationality1>
-        <email>abughali@yahoo.com</email>
-        <occupation>MLRO</occupation>
-    </reporting_person>
-    <location>
-        <address_type>2</address_type>
-        <address>maadi</address>
-        <city>malta</city>
-        <country_code>MT</country_code>
-    </location>
-    <transaction>
-        <transactionnumber>TRNWEB0015  22 JAN 20</transactionnumber>
-        <internal_ref_number>ms1251544</internal_ref_number>
-        <internal_ref_number>stupendo</internal_ref_number>
-        <transaction_location>malta </transaction_location>
-        <transaction_description>this is STR</transaction_description>
-        <date_transaction>2020-01-22T00:00:00</date_transaction>
-        <transmode_code>A</transmode_code>
-        <amount_local>10000</amount_local>
-        <t_from_my_client>
-            <from_funds_code>L</from_funds_code>
-            <from_account>
-                <institution_name>maher abo ghali</institution_name>
-                <swift>54545445</swift>
-                <account>5549494998</account>
-                <currency_code>EUR</currency_code>
-                <account_name>ZEYAD</account_name>
-                <iban>9584848448</iban>
-                <client_number>124343324</client_number>
-                <personal_account_type>18</personal_account_type>
-                <signatory>
-                    <is_primary>true</is_primary>
-                    <t_person>
-                        <gender>M</gender>
-                        <title>mr</title>
-                        <first_name>mody</first_name>
-                        <last_name>gamal</last_name>
-                        <birthdate>1994-01-06T00:00:00</birthdate>
-						<id_number>1235</id_number>
-                        <nationality1>MT</nationality1>
-                        <residence>MT</residence>
-                        <email>sample@hotmail.co.uk</email>
-                        <identification>
-                            <type>A</type>
-                            <number>54549499797979</number>
-                            <issue_country>MT</issue_country>
-                        </identification>
-                    </t_person>
-                    <role>PS</role>
-                </signatory>
-                <opened>2002-01-03T00:00:00</opened>
-                <balance>250000</balance>
-                <status_code>BL</status_code>
-                <beneficiary>zeyad</beneficiary>
-            </from_account>
-            <from_country>MT</from_country>
-        </t_from_my_client>
-        <t_to_my_client>
-            <to_funds_code>L</to_funds_code>
-            <to_account>
-                <institution_name>maher abo ghali</institution_name>
-                <swift>5454847</swift>
-                <branch>malta</branch>
-                <account>176271627167</account>
-                <currency_code>EUR</currency_code>
-                <account_name>maher</account_name>
-                <iban>776767326736</iban>
-                <client_number>92389239839</client_number>
-                <personal_account_type>18</personal_account_type>
-                <signatory>
-                    <is_primary>true</is_primary>
-                    <t_person>
-                        <gender>M</gender>
-                        <title>mr</title>
-                        <first_name>mody</first_name>
-                        <last_name>gamal</last_name>
-                        <birthdate>1994-01-06T00:00:00</birthdate>
-						<id_number>1235</id_number>
-                        <nationality1>MT</nationality1>
-                        <residence>MT</residence>
-                        <email>sample@hotmail.co.uk</email>
-                        <identification>
-                            <type>A</type>
-                            <number>54549499797979</number>
-                            <issue_country>MT</issue_country>
-                        </identification>
-                    </t_person>
-                    <role>PS</role>
-                </signatory>
-                <opened>2016-01-06T00:00:00</opened>
-                <balance>8922526</balance>
-                <status_code>BL</status_code>
-                <beneficiary>zeyad</beneficiary>
-            </to_account>
-            <to_country>MT</to_country>
-        </t_to_my_client>
-    </transaction>
-</report>`
+            var tableData;
 
-            function nodeToRow(node, rowData = {}, fieldNames = {}, path = "") {
+            function nodeToRow(node, fieldNames = {}, rowData = {}, path = "") {
                 var elemRep={};
                 for (var i = 0; i < node.children.length; i++) {
                     var child = node.children[i];
@@ -137,26 +32,52 @@
                         postFix = "_"+elemRep[child.tagName];
                     }
                     var isLeaf = child.children.length == 0;
-                    console.log(`for node ${child.tagName} with rowData so far ${rowData}`)
-                    var prefix = path.length > 0 ? path + "_" : "";
+                    var prefix = path.length > 0 ? path + "/" : "";
                     var fieldName=prefix+child.tagName+postFix;
                     if (isLeaf) {
-                        console.log("is leaf!");
                         rowData[fieldName] = child.innerHTML;
                         fieldNames[fieldName] = 1;
                     } else {
-                        nodeToRow(child, rowData, fieldNames, fieldName)
+                        nodeToRow(child, fieldNames, rowData, fieldName)
                     }
                 }
                 return rowData;
             }
 
-            function convertToCsv(xmlStr, nodeName) {
+            function evalXpath(xmlDoc,xpathExpression) {
+                console.log(`evaluating xpath expression ${xpathExpression}`)
+                var nsResolver = xmlDoc.createNSResolver(xmlDoc.ownerDocument == null ? xmlDoc.documentElement : xmlDoc.ownerDocument.documentElement);
+                var res = xmlDoc.evaluate(xpathExpression, xmlDoc, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null)
+                return res;
+            }
+
+            function extractAllTagNames(xmlDoc,path="",tagNames={}) {
+                for (var i=0; i<xmlDoc.children.length; i++) {
+                    var currentChild = xmlDoc.children[i];
+                    var fullPath=path+"/"+currentChild.tagName;
+                    tagNames[fullPath]=1;
+                    for (var ii=0; ii<currentChild.children.length; ii++) {
+                        extractAllTagNames(currentChild,fullPath,tagNames)
+                    }
+                }
+                return tagNames;
+            }
+
+            function xmlStrToDoc(xmlStr) {
                 var parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlStr, 'text/xml')
+                return xmlDoc;
+            }
+
+            function convertToCsv(xmlDoc, tagName) {
                 console.log("xml: ${xmlDoc} ", xmlDoc);
-                var nsResolver = xmlDoc.createNSResolver(xmlDoc.ownerDocument == null ? xmlDoc.documentElement : xmlDoc.ownerDocument.documentElement);
-                var res = xmlDoc.evaluate("//transaction", xmlDoc, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null)
+                var xpathExpression;
+                if (!tagName.startsWith("/")) {
+                    xpathExpression="//"+tagName;
+                } else {
+                    xpathExpression=tagName;
+                }
+                var res=evalXpath(xmlDoc,xpathExpression)
                 var nextNode;
                 var tabData = [];
                 console.log(`iterating transaction: ${res}`)
@@ -164,7 +85,7 @@
                 while (nextNode = res.iterateNext()) {
                     console.log("in row")
                     var rowData = nodeToRow(nextNode, fieldNames);
-                    console.log(`rowData: ${rowData}`);
+                    console.log(`storing data: ${rowData.internal_ref_number_2}`);
                     tabData.push(rowData);
                 }
                 return {
@@ -175,15 +96,17 @@
 
             function openFile(event) {
                 loadTextFile(event.target.files[0], xmlStr => {
-                    var tabData = convertToCsv(xmlStr, "transaction");
-
+                    xmlDoc = xmlStrToDoc(xmlStr)
+                    var step2Div=document.getElementById('step2');
+                    step2Div.style.visibility="visible";
                 })
             }
 
             function rowToCommaSepString(fieldNames, row) {
                 var rowCsv = "";
                 for (var field in fieldNames) {
-                    rowCsv = rowCsv + row[field] + ",";
+                    var strValue = row[field] ? row[field] : "";
+                    rowCsv = rowCsv + strValue + ",";
                 }
                 return rowCsv;
             }
@@ -208,16 +131,18 @@
 
                 document.body.removeChild(element);
             }
-
-            var tableInfo = convertToCsv(sampleXml, "transaction");
-            console.log(`tabData: ${tableInfo.tabData.length}`);
-            var fieldNamesStr = fieldNamesToCsv(tableInfo.fieldNames);
-            console.log(fieldNamesStr);
-            var csv = fieldNamesStr;
             
-            tableInfo.tabData.forEach(row => csv+="\n"+rowToCommaSepString(tableInfo.fieldNames, row));
-
-            download("row_data.csv",csv)
+            function saveTabDataToCsv() {
+                var tagNameInput=document.getElementById('tagNameInput');
+                var tagName=tagNameInput.value;
+                tableData = convertToCsv(xmlDoc, tagName);
+                var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
+                console.log(fieldNamesStr);
+                var csv = fieldNamesStr;
+                tableData.tabData.forEach(row => csv+="\n"+rowToCommaSepString(tableData.fieldNames, row));
+                download("row_data.csv",csv)
+            }
+            
 
             function loadTextFile(path, onFileRead) {
 
@@ -236,6 +161,13 @@
                 reader.onerror = (e) => alert(e.target.error.name);
 
                 reader.readAsText(path);
+            }
+
+            function checkNodeInput(inputElem) {
+                if (inputElem.value.length > 0) {
+                    var convertBtn = document.getElementById('convertBtn');
+                    convertBtn.disabled=false;
+                }
             }
 
 
