@@ -39,8 +39,36 @@
 
         </div>
         <script>
+            class ArrayMap {
 
-            var tableData;
+                constructor() {
+                    this.map = new Map();
+                    this.keyList = []
+                }
+
+                set(key, value, index = -1) {
+                    this.map.set(key, value);
+                    if (index == -1) {
+                        this.keyList[this.keyList.length] = key;
+                    } else {
+                        var alreadyAtPos = this.keyList[index] != key;
+                        if (alreadyAtPos) {
+                            this.keyList.splice(index, 0, key);
+                        }
+                    }
+                }
+
+                get(key) {
+                    return this.map.get(key);
+                }
+
+
+                getKeys() {
+                    return this.keyList;
+                }
+            }
+
+            var _tableData;
 
             function notifyAndThrow(e) {
                 notify(`conversion failed. please check logs: ${e.message}`, false);
@@ -50,7 +78,7 @@
 
             function notify(message, success = true) {
                 var messageDiv = document.getElementById('messageDiv');
-                messageDiv.style.visibility="visible";
+                messageDiv.style.visibility = "visible";
                 messageDiv.innerText = message;
                 var outComeClass = success ? "success" : "error";
                 messageDiv.classList.add(outComeClass);
@@ -61,19 +89,29 @@
                 for (var i = 0; i < node.children.length; i++) {
                     var child = node.children[i];
                     var postFix;
+                    var previousPostFix=null;
                     if (!elemRep[child.tagName]) {
                         elemRep[child.tagName] = 1
                         postFix = ""
                     } else {
+                        var previousElemIdx=elemRep[child.tagName];
                         elemRep[child.tagName]++;
                         postFix = "_" + elemRep[child.tagName];
+                        previousPostFix = previousElemIdx==1 ? "" : "_"+previousElemIdx;
                     }
                     var isLeaf = child.children.length == 0;
                     var prefix = path.length > 0 ? path + "/" : "";
                     var fieldName = prefix + child.tagName + postFix;
                     if (isLeaf) {
                         rowData[fieldName] = child.innerHTML;
-                        fieldNames[fieldName] = 1;
+                        if (!fieldNames[fieldName]) {
+                            if (previousPostFix == "" || previousPostFix) {
+                                var previousFieldName = prefix+child.tagName+previousPostFix
+                                fieldNames[fieldName] = fieldNames[previousFieldName]+1;
+                            } else {
+                                fieldNames[fieldName] = Object.getOwnPropertyNames(fieldNames).length;
+                            }
+                        }
                     } else {
                         nodeToRow(child, fieldNames, rowData, fieldName)
                     }
@@ -106,7 +144,7 @@
                 return xmlDoc;
             }
 
-            function convertToCsv(xmlDoc, tagName) {
+            async function convertToCsv(xmlDoc, tagName) {
                 console.log("xml: ${xmlDoc} ", xmlDoc);
                 var xpathExpression;
                 if (!tagName.startsWith("/")) {
@@ -120,9 +158,7 @@
                 console.log(`iterating transaction: ${res}`)
                 var fieldNames = {};
                 while (nextNode = res.iterateNext()) {
-                    console.log("in row")
                     var rowData = nodeToRow(nextNode, fieldNames);
-                    console.log(`storing data: ${rowData.internal_ref_number_2}`);
                     tabData.push(rowData);
                 }
                 return {
@@ -134,7 +170,7 @@
             function openFile(event) {
                 loadTextFile(event.target.files[0], xmlStr => {
                     try {
-                        document.getElementById('messageDiv').style.visibility="hidden";
+                        document.getElementById('messageDiv').style.visibility = "hidden";
                         xmlDoc = xmlStrToDoc(xmlStr)
                         var step2Div = document.getElementById('step2');
                         step2Div.style.visibility = "visible";
@@ -149,7 +185,7 @@
                 for (var field in fieldNames) {
                     var strValue = row[field] ? row[field] : "";
                     rowCsv = rowCsv + strValue + ",";
-                }
+                };
                 return rowCsv;
             }
 
@@ -174,19 +210,31 @@
                 document.body.removeChild(element);
             }
 
-            
+
 
             function saveTabDataToCsv() {
                 try {
+                    window.requestAnimationFrame(() => {
+                        ("working on it....");
+                        var convertBtn = document.getElementById('convertBtn');
+                        convertBtn.disabled = true;
+                        console.log("notified...");
+                    });
                     var tagNameInput = document.getElementById('tagNameInput');
                     var tagName = tagNameInput.value;
-                    tableData = convertToCsv(xmlDoc, tagName);
-                    var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
-                    console.log(fieldNamesStr);
-                    var csv = fieldNamesStr;
-                    tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
-                    download("row_data.csv", csv)
-                    notify("conversion complete!");
+                    setTimeout(() => {
+                        convertToCsv(xmlDoc, tagName).then(tableData => {
+                            _tableData=tableData;
+                            var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
+                            console.log(fieldNamesStr);
+                            var csv = fieldNamesStr;
+                            tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
+                            download("row_data.csv", csv)
+                            notify("conversion complete!");
+                        }).catch(e => {
+                            notifyAndThrow(e);
+                        });
+                    }, 0);
                 } catch (e) {
                     notifyAndThrow(e);
                 }
@@ -218,8 +266,6 @@
                     convertBtn.disabled = false;
                 }
             }
-
-
 
         </script>
     </body>
