@@ -182,18 +182,18 @@
 
             function rowToCommaSepString(fieldNames, row) {
                 var rowCsv = "";
-                for (var field in fieldNames) {
+                fieldNames.forEach(field => {
                     var strValue = row[field] ? row[field] : "";
                     rowCsv = rowCsv + strValue + ",";
-                };
+                });
                 return rowCsv;
             }
 
             function fieldNamesToCsv(fieldNames) {
                 var rowCsv = "";
-                for (var field in fieldNames) {
+                fieldNames.forEach(field => {
                     rowCsv = rowCsv + field + ",";
-                }
+                });
                 return rowCsv;
             }
 
@@ -210,6 +210,11 @@
                 document.body.removeChild(element);
             }
 
+            function sortFieldNames(fieldNames) {
+                var fieldNamesArray=Object.getOwnPropertyNames(fieldNames);
+                fieldNamesArray.sort((f1,f2) => {return fieldNames[f1]-fieldNames[f2]})
+                return fieldNamesArray;
+            }
 
 
             function saveTabDataToCsv() {
@@ -225,10 +230,11 @@
                     setTimeout(() => {
                         convertToCsv(xmlDoc, tagName).then(tableData => {
                             _tableData=tableData;
-                            var fieldNamesStr = fieldNamesToCsv(tableData.fieldNames);
+                            var fieldNamesArray=sortFieldNames(tableData.fieldNames)
+                            var fieldNamesStr = fieldNamesToCsv(fieldNamesArray);
                             console.log(fieldNamesStr);
                             var csv = fieldNamesStr;
-                            tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(tableData.fieldNames, row));
+                            tableData.tabData.forEach(row => csv += "\n" + rowToCommaSepString(fieldNamesArray, row));
                             download("row_data.csv", csv)
                             notify("conversion complete!");
                         }).catch(e => {
